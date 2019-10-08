@@ -1,17 +1,18 @@
 DESCRIPTION:
 
-rcv_scenarios.py runs rank-choice voting on a sweep of predefined scenarios.
+rcv_scenarios.py runs ranked choice voting (RCV) on a suite of predefined scenarios.
 
-The election winners are determined by Single Transferrable Voting:
+The election winners are determined by a Single Transferable Vote algorithm:
 votes that exceed the required threshold are transfered proportionally to 
-their remaining share among votes with same first choice.
+their remaining share among votes with same first choice. We use the weighted
+Gregory method here.  
 
 The scenarios (described below) represent a range of potential voter behavior in
 communities with one or two sizeable racial minority populations.
-The scenarios vary:
+The scenarios vary the following parameters:
     - number of seats in the election
     - level of racial polarization
-    - aggreement on how candidates are ranked
+    - aggreement among voters on how candidates of certain racial groups are ranked
 
 
 
@@ -47,7 +48,7 @@ the election
 SCENARIOS:
 
 There are eight different scenarios in the simulation.  Each scenario is run for 
-four different number of representative seats (3,5,7, and 9) for a total of 32 
+four different numbers of representative seats (3,5,7, and 9) for a total of 32 
 different simulations.  The scenarios vary over two different levels of voting 
 polarization and four different ways of ordering ('permuting') the candidates, 
 giving a total of eight possible combinations.
@@ -84,14 +85,13 @@ Candidate Permutations:
 
 SIMPLIFYING ASSUMPTIONS:
 
-There are arbitrarily many options and scenarios that can be simulated.  In order to 
-simulate a reasonable number of representative scenarios we make some simplifying 
-assumptions.
+There are arbitrarily many options and scenarios that can be simulated.  This code makes some
+simplifying assumptions that can easily be modified by the user.
 	- We assume that if there are n seats, then there are n white candidates and
-	n minority candidates in the race.  This assumption allows for all possible
-	numbers of minority (and white) winners between 0 and n.
+	n POC candidates in the race.  This assumption allows for all possible
+	numbers of POC (and white) winners between 0 and n.
 	- We assume that every voter ranks every candidate.
-	- We assume that a minority 'crossover' voter is one who prefers a white candidate
-	rather than a minority candidate from a different racial group than their own.
+	- We assume that a POC 'crossover' voter is one who prefers a white candidate.
+
 
 
