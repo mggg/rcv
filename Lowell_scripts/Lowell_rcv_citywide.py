@@ -7,26 +7,11 @@ Created on Mon Sep  2 12:56:03 2019
 
 """
 
-this tool runs simple instances of rank-choice voting.
-votes that exceed the threshold are transfered proportionally to 
-their remaining share among votes with same first choice.
-
-takes as input a list of rankings (first choice to last) 
-and percent of voters with that ranking:
-
-[['candidate_1', 'candidate 2', ....], percent with this rank choice], 
-    ['candidate_2', 'candidate 1', ....], percent with this rank choice],
-    ...]
-
-e.g.:
-    ballot_list = [['w1','w2','h1'],
-                ['w1','h1','w2'],
-                ['h1','w1']]
-
-
-percentages need not sum to one and can optionally be rescaled
-
-rankings need not be complete
+This tool runs simple instances of rank-choice voting. It models
+the Cincinnati method of tabulating votes in a Single Transverable Vote
+(STV) process for a city-wide vote.
+When a candidate is elected their excess votes are transferred
+to the next preferred candidate on the excess ballots.
 
 """
 
@@ -34,10 +19,9 @@ import math
 import random
 import pandas as pd
 
-#output_sample = open('C:\\Users\\darac\\Desktop\\Lowell\\sample3', 'a')
-#output_sample.close()
+############## Count ballots using Cincinnati method ###############
 
-def remove_cand(cand, ballot_list):#just removes a candidate from each ballot in list, keeps %s the same
+def remove_cand(cand, ballot_list):
     for n, ballot in enumerate(ballot_list):
         new_ballot = []
         for c in ballot:
@@ -66,7 +50,6 @@ def recompute_count(candidates, ballot_list):
         cand_totals[cand] = len([ballot for ballot in ballot_list if ballot[0] == cand])
     return cand_totals  
         
-#ballot_list = [['c1', 'c2', 'c4'], ['c3', 'c2', 'c5'] , ['c1', 'c3', 'c2'], ['c1','c4', 'w4'], ['c1', 'c3', 'w2'], ['c1', 'c5', 'w5'], ['c1', 'c4', 'c6'], ['c1', 'c2', 'w5']]   
 
 def rcv_run(ballot_list, num_seats, num_votes, verbose_bool): 
     winners = []
@@ -87,7 +70,7 @@ def rcv_run(ballot_list, num_seats, num_votes, verbose_bool):
             if cand_totals[cand] >= cutoff:
                 winners.append(cand)
                 new_winners.append(cand)
-                transfer_surplus(cand, ballot_list, "win", cutoff) #and edit ballot list   
+                transfer_surplus(cand, ballot_list, "win", cutoff)  
                 del cand_totals[cand]
                 ballot_list = [x for x in ballot_list if x != []]                
                 cand_totals = recompute_count(candidates, ballot_list)
@@ -107,10 +90,8 @@ def rcv_run(ballot_list, num_seats, num_votes, verbose_bool):
 
     return winners
 
-#rcv_run(ballot_list, 3, len(ballot_list),1)  
 
-
-############## build scenarios ###############
+############## build ballot generation scenarios ###############
 
 def polarized_generator(num_seats, i, perm_white, perm_coalition):
     if i in {1,2,3}:
@@ -168,7 +149,6 @@ def scenario_generator(num_seats, votes, vote_vec, perm_white_vec, perm_coal_vec
         # polarized votes
         for vote in range(math.ceil(votes*vote_vec[i]*(1.0-pct_crossover_vec[i]))): #ex. make all non-cross over white voter ballots
             vote_list.append(polarized_generator(num_seats, i, perm_white_vec[i], perm_coal_vec[i]))
-            #note- polarized means WWWHHH structure, but perm_white/perm_hisp decides ordering within WWW or HHH etc.
         # crossover votes
         for vote in range(math.ceil(votes*vote_vec[i]*(pct_crossover_vec[i]))):
             vote_list.append(crossover_generator(num_seats, i, perm_white_vec[i], perm_coal_vec[i]))
@@ -180,55 +160,40 @@ candidate_dict = {'w1':0,'w2':0,'w3':0,'w4':0,'w5':0,'w6':0,'w7':0,'w8':0,'w9':0
 candidates = list(candidate_dict.keys())
 
 white_cands = ['w1','w2','w3','w4','w5','w6','w7','w8','w9']
-#hispanic_cands = ['h1','h2','h3','h4','h5','h6','h7','h8','h9']
-#asian_cands = ['a1','a2','a3','a4','a5','a6','a7','a8','a9']
 coal_cands = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 
-#white, hispanic, asian, other
+#vector order: white, hispanic, asian, other
 cvap_vec = [.59, .17, .17, .07]
-turnout_list= [[1,1,1,1], [1,.5,.5,1], [1,.25, .75, 1], [1, .75, .25, 1], [1,1/3, 1/3,1], [1,.1,.9,1], [1,.9,.1,1], [1,.8,.8,1]]
-crossover_list = [[.1, .3, .3, .3], [.3, .3, .3, .3], [.1, .5, .5, .1], [.1, .1, .1, .1], [.1, .1, .5, .1], [.1,.5,.1,.1]]
+turnout_list= [[1,1,1,1], 
+               [1,.5,.5,1],
+               [1,.25, .75, 1],
+               [1, .75, .25, 1],
+               [1,1/3, 1/3,1],
+               [1,.1,.9,1], 
+               [1,.9,.1,1], 
+               [1,.8,.8,1]]
+crossover_list = [[.1, .3, .3, .3],
+                  [.3, .3, .3, .3], 
+                  [.1, .5, .5, .1], 
+                  [.1, .1, .1, .1], 
+                  [.1, .1, .5, .1], 
+                  [.1,.5,.1,.1]]
+
 den_list = [sum(x * y for x, y in zip(cvap_vec, turnout_list[i])) for i in range(len(turnout_list)) ]
 vote_list = [[x * y/den_list[i] for x, y in zip(cvap_vec, turnout_list[i])] for i in range(len(turnout_list))]
 
-#white, hisp, asian, other
-#crossover_vec = [0.1, .3, 0.3, .3]
-#crossover_list=[[.02,.77,.58,.4],
-#                [.01,.8,.61,.34],
-#                [.07,.53,.38,.01],
-#                [.07,.76,.73,.01],
-#                [.07,.99,.51,.24],
-#                [.1,.69,.76,.27],
-#                [.02,.56,.17,.03],
-#                [.6,.55,.01,.34],
-#                [.45,.68,.07,.04],
-#                [.02,.59,.9,.46],
-#                [.65,.32,.27,.05],
-#                [.2,.17,.48,.07]]
-#crossover_list = [[.1, .1, .1, .2], [.3,.5,.4,.7]]
-rcv_output = pd.DataFrame(columns = ["Turnout", "Crossover", "CVAP", "Vote vector", "num_seats", \
-                                                       'total pol., unam vote', 'total pol., minority permute min_i', \
-                                                       'total pol., all permute all', 'total pol., white permute all', \
-                                                        'crossover, unam vote', 'crossover, minority permute min_i', \
-                                                        'crossover, all permute all', 'crossover, white permute all'])
+rcv_output = pd.DataFrame(columns = ["Turnout", "Crossover", "num_seats", \
+                                     'total pol., unam vote', 'total pol., minority permute min_i', \
+                                     'total pol., all permute all', 'total pol., white permute all', \
+                                     'crossover, unam vote', 'crossover, minority permute min_i', \
+                                     'crossover, all permute all', 'crossover, white permute all'])
 
-turnout = []
-crossover = []
-vote_vec = []
-cvap = []
-#output_sample = open('C:\\Users\\darac\\Desktop\\Lowell\\sensitivity_analysis_cvap_crossover_change', 'a')
 for vec in vote_list:    
     for vec2 in crossover_list:
         crossover_vec = vec2
         vote_vec = vec 
-        #for output
-    #    output_sample.write("vote_vec: %s\n" % (vote_vec))
-    #    output_sample.write("crossover_vec: %s\n" % (crossover_vec))
-    #    output_sample.write("cvap_vec: %s\n" % (cvap_vec))
         index = vote_list.index(vec)
-    #    output_sample.write("turnout_vec: %s\n" %(turnout_list[index]))
-       
-    
+          
         scen1 = [[False, False, False, False],
                 [False, False, False, False],
                 [0,0,0,0], 'total pol., unam vote']
@@ -264,12 +229,15 @@ for vec in vote_list:
         
         scen_list = [scen1, scen2a, scen2b, scen2c, scen3, scen4a, scen4b, scen4c]
         
-        num_votes = 5000 #00#change to 25k
-        num_runs = 200 #0#100 runs, only rerun if scen
+###################### Edit Inputs Below ######################  
         
-
-          #seats
-        for i in [6]:        
+        num_votes = 5000
+        num_runs = 200
+        num_seats = 3 #elected via RCV city-wide
+        
+###############################################################
+        
+        for i in [num_seats]:        
             scen_output = {}
             for scen in scen_list:
                 num_coal_seats = []
@@ -277,15 +245,8 @@ for vec in vote_list:
                     winners = rcv_run(scenario_generator(i, num_votes, vote_vec, scen[0], scen[1], scen[2]), i, num_votes, False)
                     num_coal_seats.append(sum(candidate_dict[x] for x in winners))
                 scen_output[scen_list.index(scen)] = sum(num_coal_seats)/len(num_coal_seats)
-              #  if 'unam' in scen[3]:
-                   # output_sample.write("%s %s seats, coalition seats: %s\n" % (scen[3], i, num_coal_seats[0]))
-                 #   print(scen[3], i, 'seats', 'coalition seats:', num_coal_seats[0] )     
-                  
-                    
-             #   else:
-                    #output_sample.write("%s %s seats, min: %s, max: %s, avg: %s \n" % (scen[3], i, min(num_coal_seats), max(num_coal_seats), sum(num_coal_seats)/len(num_coal_seats)))
-                  #  print(scen[3], i, 'seats', 'min:', min(num_coal_seats), 'max:', max(num_coal_seats), 'avg:', sum(num_coal_seats)/len(num_coal_seats))     
-        
-            rcv_output.loc[len(rcv_output)] = [turnout_list[index], crossover_vec, cvap_vec, vote_vec, i] + list(scen_output.values())
-rcv_output.to_csv("sensitivity_turnout_crossover_6_seat.csv")
-#output_sample.close()
+             
+            rcv_output.loc[len(rcv_output)] = [turnout_list[index], crossover_vec, i] + list(scen_output.values())
+
+rcv_output.to_csv("Lowell_rcv_output_citywide.csv")
+
